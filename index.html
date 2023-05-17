@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Міжнародні резерви</title>
+</head>
+<body>
+    <h1>Міжнародні резерви</h1>
+
+    <form id="input-form">
+        <label for="year">Рік:</label>
+        <input type="number" id="year" min="1900" max="2100" required>
+
+        <label for="month">Місяць:</label>
+        <input type="number" id="month" min="1" max="12" required>
+
+        <button type="submit">Показати</button>
+    </form>
+
+    <ul id="reserves-list"></ul>
+
+    <script>
+        function displayReserves(data) {
+            var reservesList = document.getElementById("reserves-list");
+            reservesList.innerHTML = "";
+
+            for (var i = 0; i < data.length; i++) {
+                var reserve = data[i];
+                var li = document.createElement("li");
+                li.textContent = reserve.dt + " - " + reserve.txt + ": " + reserve.value;
+                reservesList.appendChild(li);
+            }
+        }
+
+        function fetchReserves(year, month) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "https://bank.gov.ua/NBUStatService/v1/statdirectory/res?date=" + year + (month < 10 ? "0" + month : month), true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var xmlData = xhr.responseText;
+                    var parser = new DOMParser();
+                    var xmlDoc = parser.parseFromString(xmlData, "text/xml");
+
+                    var reserves = xmlDoc.getElementsByTagName("res");
+                    var data = [];
+
+                    for (var i = 0; i < reserves.length; i++) {
+                        var reserve = reserves[i];
+                        var dt = reserve.getElementsByTagName("dt")[0].textContent;
+                        var txt = reserve.getElementsByTagName("txt")[0].textContent;
+                        var value = reserve.getElementsByTagName("value")[0].textContent;
+
+                        data.push({ dt: dt, txt: txt, value: value });
+                    }
+
+                    displayReserves(data);
+                }
+            };
+            xhr.send();
+        }
+
+        var form = document.getElementById("input-form");
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            var year = document.getElementById("year").value;
+            var month = document.getElementById("month").value;
+            fetchReserves(year, month);
+        });
+    </script>
+</body>
+</html>
